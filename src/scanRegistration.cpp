@@ -52,6 +52,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+//简单的参数设置
 
 using std::atan2;
 using std::cos;
@@ -81,8 +82,9 @@ std::vector<ros::Publisher> pubEachScan;
 bool PUB_EACH_LINE = false;
 
 double MINIMUM_RANGE = 0.1; 
-
+//点云的模板类
 template <typename PointT>
+//此函数用于去掉相同的点
 void removeClosedPointCloud(const pcl::PointCloud<PointT> &cloud_in,
                               pcl::PointCloud<PointT> &cloud_out, float thres)
 {
@@ -95,7 +97,8 @@ void removeClosedPointCloud(const pcl::PointCloud<PointT> &cloud_in,
     size_t j = 0;
 
     for (size_t i = 0; i < cloud_in.points.size(); ++i)
-    {
+    {    
+        //判断两个点云之间的距离
         if (cloud_in.points[i].x * cloud_in.points[i].x + cloud_in.points[i].y * cloud_in.points[i].y + cloud_in.points[i].z * cloud_in.points[i].z < thres * thres)
             continue;
         cloud_out.points[j] = cloud_in.points[i];
