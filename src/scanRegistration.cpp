@@ -98,7 +98,7 @@ void removeClosedPointCloud(const pcl::PointCloud<PointT> &cloud_in,
 
     for (size_t i = 0; i < cloud_in.points.size(); ++i)
     {    
-        //判断两个点云之间的距离
+        //判断点云到原点的距离
         if (cloud_in.points[i].x * cloud_in.points[i].x + cloud_in.points[i].y * cloud_in.points[i].y + cloud_in.points[i].z * cloud_in.points[i].z < thres * thres)
             continue;
         cloud_out.points[j] = cloud_in.points[i];
@@ -115,7 +115,8 @@ void removeClosedPointCloud(const pcl::PointCloud<PointT> &cloud_in,
 }
 
 void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
-{
+{  //首先等待数据达到一定的帧数开始处理
+  
     if (!systemInited)
     { 
         systemInitCount++;
@@ -127,20 +128,20 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
             return;
     }
 
-    TicToc t_whole;
-    TicToc t_prepare;
-    std::vector<int> scanStartInd(N_SCANS, 0);
-    std::vector<int> scanEndInd(N_SCANS, 0);
+    TicToc t_whole;                                                //整个处理流程的计时器
+    TicToc t_prepare;                                              //点云预处理的计时器
+    std::vector<int> scanStartInd(N_SCANS, 0);                     //每条扫描线的起始点
+    std::vector<int> scanEndInd(N_SCANS, 0);                       //每条扫描线的终点
 
     pcl::PointCloud<pcl::PointXYZ> laserCloudIn;
     pcl::fromROSMsg(*laserCloudMsg, laserCloudIn);
-    std::vector<int> indices;
+    std::vector<int> indices;                                      //存储有效点索引的临时变量
 
     pcl::removeNaNFromPointCloud(laserCloudIn, laserCloudIn, indices);
     removeClosedPointCloud(laserCloudIn, laserCloudIn, MINIMUM_RANGE);
 
 
-    int cloudSize = laserCloudIn.points.size();
+    int cloudSize = laserCloudIn.points.size();                    //过滤后的点云数量
     float startOri = -atan2(laserCloudIn.points[0].y, laserCloudIn.points[0].x);
     float endOri = -atan2(laserCloudIn.points[cloudSize - 1].y,
                           laserCloudIn.points[cloudSize - 1].x) +
@@ -165,7 +166,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
         point.x = laserCloudIn.points[i].x;
         point.y = laserCloudIn.points[i].y;
         point.z = laserCloudIn.points[i].z;
-
+        //计算点的垂直角度，来判断属于那那条线
         float angle = atan(point.z / sqrt(point.x * point.x + point.y * point.y)) * 180 / M_PI;
         int scanID = 0;
 
@@ -254,7 +255,7 @@ void laserCloudHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
         scanEndInd[i] = laserCloud->size() - 6;
     }
 
-    printf("prepare time %f \n", t_prepare.toc());
+    printf("预处理时间 %f \n", t_prepare.toc());
 
     for (int i = 5; i < cloudSize - 5; i++)
     { 
